@@ -1,7 +1,5 @@
 # constancia.
 
-> Registro vivo do projeto: este README é atualizado a cada etapa entregue, então ele sempre reflete o estado atual do app — não uma foto do dia do commit inicial.
-
 ## O Problema
 Quantas vezes você tentou estudar ou trabalhar, mas acabou perdendo o foco rapidamente por causa de notificações, cansaço ou aquela sensação sufocante de ter tarefas demais acumuladas? A rotina atual fragmenta a nossa atenção, gerando frustração, procrastinação constante e a exaustiva impressão de que o dia passou sem que nada produtivo fosse concluído de verdade.
 
