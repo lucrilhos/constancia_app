@@ -3,6 +3,7 @@ import '../data/app_user.dart';
 import '../data/sample_tasks.dart';
 import '../data/task_completion.dart';
 import '../theme/app_colors.dart';
+import '../widgets/brand_mark.dart';
 import 'card_detail_screen.dart';
 import 'configuracoes_screen.dart';
 
@@ -42,11 +43,7 @@ class _ConstanciaScreenState extends State<ConstanciaScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Constancia',
-                style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary)),
+            const BrandMark(logoSize: 48),
             IconButton(
               icon: const Icon(Icons.settings_outlined, color: AppColors.textPrimary),
               onPressed: () {

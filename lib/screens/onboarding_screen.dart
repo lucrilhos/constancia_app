@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../data/app_cycle.dart';
 import '../models/focus_cycle.dart';
 import '../theme/app_colors.dart';
+import '../widgets/brand_mark.dart';
 import '../widgets/cycle_option_card.dart';
 import 'home_shell.dart';
 
@@ -26,14 +27,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Constancia',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
+              const BrandMark(logoSize: 44),
               const SizedBox(height: 8),
               const Text(
                 'Aparecer todo dia vale mais\ndo que virar a noite.',

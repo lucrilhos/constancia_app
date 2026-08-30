@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../data/app_user.dart';
 import '../theme/app_colors.dart';
+import '../widgets/brand_mark.dart';
 import 'onboarding_screen.dart';
 
 class _PasswordRule {
@@ -102,7 +103,7 @@ class _CadastroScreenState extends State<CadastroScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _Wordmark(),
+        const BrandMark(logoSize: 30),
         const SizedBox(height: 22),
         const Text(
           'Crie sua conta',
@@ -294,33 +295,6 @@ class _CadastroScreenState extends State<CadastroScreen> {
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
       ),
-    );
-  }
-}
-
-class _Wordmark extends StatelessWidget {
-  const _Wordmark();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 22,
-          height: 22,
-          decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
-          child: const Icon(Icons.check, size: 14, color: Colors.white),
-        ),
-        const SizedBox(width: 8),
-        const Text(
-          'constancia.',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-          ),
-        ),
-      ],
     );
   }
 }
