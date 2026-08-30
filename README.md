@@ -65,6 +65,8 @@ Para checar que está tudo saudável antes de subir uma mudança:
 flutter analyze
 flutter test
 ```
+## Vídeo Demonstrativo
+Link do vídeo demonstrativo: https://drive.google.com/file/d/1a-1LEiulSzd3r_bb58UxhtTSvMCIxYIN/view?usp=drive_link
 
 ## Próximos passos
 
