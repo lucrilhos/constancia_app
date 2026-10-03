@@ -29,6 +29,12 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
     if (_isRealTask) _loadFromSupabase();
   }
 
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadFromSupabase() async {
     try {
       final results = await Future.wait([

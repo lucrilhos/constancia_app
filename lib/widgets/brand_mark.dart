@@ -9,12 +9,21 @@ class BrandMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A arte tem 2000x2000 px. Sem cacheWidth/cacheHeight o Flutter decodifica
+    // a imagem inteira na memória (~15 MB) só para desenhá-la a 30-48 px.
+    // Pedimos a decodificação já no tamanho de tela, multiplicado pela
+    // densidade do dispositivo para não perder nitidez.
+    final densidade = MediaQuery.of(context).devicePixelRatio;
+    final ladoEmPixels = (logoSize * densidade).round();
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(logoSize * 0.28),
       child: Image.asset(
         'assets/logo.png',
         width: logoSize,
         height: logoSize,
+        cacheWidth: ladoEmPixels,
+        cacheHeight: ladoEmPixels,
         fit: BoxFit.cover,
       ),
     );
