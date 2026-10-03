@@ -40,9 +40,18 @@ e **não tem** o scaffold de plataforma, os assets, o teste nem dois arquivos de
 | `SETUP.md` | qualquer um | arquivos idênticos |
 | `README.md` | mesclado | ver o arquivo |
 
-## Pendências — decisões que são do grupo
+## Pendências
 
-### 1. Identidade visual: há duas direções em conflito
+> **Situação em 03/10/2026:** as pendências 1, 2 e 3 foram resolvidas nos commits
+> que seguiram o merge. A pendência 4 continua aberta e é a única que ainda exige
+> decisão do grupo.
+
+### 1. Identidade visual: há duas direções em conflito — ✅ RESOLVIDA
+
+**Decisão do grupo: vale a identidade do repositório principal.** A paleta laranja
+e a tipografia Manrope foram restauradas a partir do commit `ffd7b62`, o título
+voltou a ser `constancia.` e o selo `BrandMark` voltou às três telas. O texto
+abaixo fica como registro do que estava em conflito.
 
 Esta é a única divergência que **não** foi resolvida automaticamente, porque não
 é questão técnica.
@@ -81,7 +90,11 @@ Falta ainda, nesse caso, reverter o título em `lib/main.dart`
 em `cadastro_screen.dart`, `onboarding_screen.dart` e `constancia_screen.dart`
 — uma linha em cada, com o `import '../widgets/brand_mark.dart';` no topo.
 
-### 2. O teste existente vai falhar
+### 2. O teste existente vai falhar — ✅ RESOLVIDA
+
+Com o `BrandMark` de volta na tela de cadastro, a `Image` que o teste procura
+existe novamente. O teste **não foi alterado** — foi o código que voltou a cumprir
+o contrato que ele descreve.
 
 `test/widget_test.dart` termina com:
 
@@ -99,7 +112,18 @@ teste volta a passar sem alteração) ou remover essa linha do teste.
 > unificação — o SDK do Flutter não estava disponível no ambiente onde o merge
 > foi feito. Rode os dois antes de commitar.
 
-### 3. `task_completion.dart` ficou sem referência
+### 3. `task_completion.dart` ficou sem referência — ✅ RESOLVIDA
+
+O arquivo voltou a ser usado. A investigação revelou um problema maior do que o
+arquivo órfão: a versão do CP5 trocou o estado compartilhado por um `Set` local
+dentro da tela principal, e com isso **concluir um ciclo de foco deixou de marcar
+a tarefa como feita** — o ciclo só guardava um sinalizador interno. Agora as duas
+telas voltam a usar `TaskCompletion`, e a navegação para o detalhe da tarefa é
+aguardada para que a marcação apareça na volta.
+
+Continua valendo a observação sobre o schema: o enum do Supabase não tem valor
+para "concluída", então a marcação segue só em memória. Levar isso para o banco
+está nos próximos passos do README.
 
 `TaskCompletion` era um `Set` em memória que marcava tarefas concluídas no dia.
 Era usado por `focus_cycle_screen.dart` e `constancia_screen.dart` no principal,
@@ -114,7 +138,7 @@ precisa de uma coluna nova no schema — não é algo que o Supabase já cubra.
 
 Decidam entre: apagar o arquivo, ou levar o conceito de "concluída" para o banco.
 
-### 4. Segurança: chave e políticas abertas em repositório público
+### 4. Segurança: chave e políticas abertas em repositório público — ⚠️ ABERTA
 
 `lib/data/supabase_config.dart` traz a URL e a `anon key` do projeto Supabase
 versionadas. O comentário do próprio arquivo está correto ao dizer que a anon key
