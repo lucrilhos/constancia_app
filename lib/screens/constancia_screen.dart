@@ -5,7 +5,7 @@ import '../data/supabase_service.dart';
 import '../data/task_completion.dart';
 import '../models/task_card_model.dart';
 import '../theme/app_colors.dart';
-import '../widgets/brand_mark.dart';
+import '../widgets/animated_wordmark.dart';
 import 'card_detail_screen.dart';
 import 'configuracoes_screen.dart';
 
@@ -95,7 +95,7 @@ class _ConstanciaScreenState extends State<ConstanciaScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const BrandMark(logoSize: 48),
+            const AnimatedWordmark(fontSize: 30),
             IconButton(
               icon: const Icon(Icons.settings_outlined,
                   color: AppColors.textPrimary),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../data/app_user.dart';
 import '../theme/app_colors.dart';
-import '../widgets/brand_mark.dart';
+import '../widgets/animated_wordmark.dart';
 import 'onboarding_screen.dart';
 
 class _PasswordRule {
@@ -103,7 +103,7 @@ class _CadastroScreenState extends State<CadastroScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const BrandMark(logoSize: 30),
+        const AnimatedWordmark(fontSize: 26),
         const SizedBox(height: 22),
         const Text(
           'Crie sua conta',
