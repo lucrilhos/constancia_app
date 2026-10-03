@@ -19,7 +19,7 @@ class ConstanciaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Constancia',
+      title: 'constancia.',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       home: const CadastroScreen(),
