@@ -1,14 +1,19 @@
 import '../models/focus_cycle.dart';
 
-/// Guarda qual ciclo de foco a pessoa escolheu (no onboarding ou nas
-/// configurações), pra ser usado quando o timer real começar a contar.
 class AppCycle {
   AppCycle._();
 
-  static FocusCycle selected = FocusCycle.presets[2]; // 60/20 por padrão
+  static FocusCycle selected = FocusCycle.presets[2];
 
-  /// Minutos de foco a usar no timer. Se "Personalizado" foi escolhido
-  /// mas ainda não tem uma tela de input pra ele, cai num valor razoável.
-  static int get focusMinutes =>
-      selected.isCustom ? 25 : selected.focusMinutes;
+  static int get focusMinutes {
+    if (selected.label == '60/20') return 1;
+    if (selected.isCustom) return 25;
+    return selected.focusMinutes;
+  }
+
+  static int get restMinutes {
+    if (selected.label == '60/20') return 1;
+    if (selected.isCustom) return 5;
+    return selected.restMinutes;
+  }
 }

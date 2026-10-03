@@ -1,23 +1,52 @@
 import 'package:flutter/material.dart';
 import '../data/sample_tasks.dart';
+import '../data/supabase_service.dart';
 import '../models/task_card_model.dart';
 import '../theme/app_colors.dart';
 import '../widgets/task_card.dart';
 import 'card_detail_screen.dart';
 import 'configuracoes_screen.dart';
 
-class BoardScreen extends StatelessWidget {
+class BoardScreen extends StatefulWidget {
   const BoardScreen({super.key});
+
+  @override
+  State<BoardScreen> createState() => _BoardScreenState();
+}
+
+class _BoardScreenState extends State<BoardScreen> {
+  // Começa com os dados locais (fallback) e troca pelos reais do Supabase
+  // assim que a busca terminar.
+  List<TaskCardModel> _tasks = sampleTasks;
+  bool _offline = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final tasks = await SupabaseService.fetchTasks();
+      if (!mounted) return;
+      setState(() {
+        if (tasks.isNotEmpty) _tasks = tasks;
+        _offline = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _offline = true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final naoIniciada =
-        sampleTasks.where((t) => t.status == TaskStatus.naoIniciada).toList();
-    final emDesenvolvimento = sampleTasks
-        .where((t) => t.status == TaskStatus.emDesenvolvimento)
-        .toList();
-    final parada =
-        sampleTasks.where((t) => t.status == TaskStatus.parada).toList();
+        _tasks.where((t) => t.status == TaskStatus.naoIniciada).toList();
+    final emDesenvolvimento =
+        _tasks.where((t) => t.status == TaskStatus.emDesenvolvimento).toList();
+    final parada = _tasks.where((t) => t.status == TaskStatus.parada).toList();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
@@ -40,6 +69,11 @@ class BoardScreen extends StatelessWidget {
             ),
           ],
         ),
+        if (_offline) ...[
+          const SizedBox(height: 4),
+          const Text('Sem conexão com o banco — mostrando dados locais.',
+              style: TextStyle(fontSize: 11.5, color: AppColors.statusParada)),
+        ],
         const SizedBox(height: 4),
         _StatusSection(
             title: 'Não iniciada',

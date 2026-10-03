@@ -13,9 +13,9 @@ class AppTheme {
         primary: AppColors.primary,
         surface: AppColors.background,
         brightness: Brightness.light,
-      ).copyWith(secondary: AppColors.accentYellow),
+      ),
       scaffoldBackgroundColor: AppColors.background,
-      textTheme: GoogleFonts.manropeTextTheme(),
+      textTheme: GoogleFonts.interTextTheme(),
     );
 
     return base.copyWith(
@@ -24,10 +24,10 @@ class AppTheme {
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.manrope(
+        titleTextStyle: GoogleFonts.inter(
           color: AppColors.textPrimary,
           fontSize: 20,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w700,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -38,9 +38,9 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: GoogleFonts.manrope(
+          textStyle: GoogleFonts.inter(
             fontSize: 16,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),

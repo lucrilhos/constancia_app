@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../data/app_user.dart';
 import '../data/sample_tasks.dart';
-import '../data/task_completion.dart';
+import '../data/supabase_service.dart';
+import '../models/task_card_model.dart';
 import '../theme/app_colors.dart';
-import '../widgets/brand_mark.dart';
 import 'card_detail_screen.dart';
 import 'configuracoes_screen.dart';
 
@@ -15,23 +15,74 @@ class ConstanciaScreen extends StatefulWidget {
 }
 
 class _ConstanciaScreenState extends State<ConstanciaScreen> {
+  // Tarefas em destaque na tela principal (as "principais" do dia).
+  // Marcar como feita aqui é só visual neste MVP — não altera o status
+  // da tarefa no banco.
+  final Set<String> _doneToday = {};
 
-  static final _highlightTasks =
-      sampleTasks.where((t) => t.title != 'Preparar apresentação do TCC').take(2).toList();
+  // Começa com os dados locais (pra tela nunca ficar em branco) e troca
+  // pelos dados reais assim que o Supabase responder.
+  List<TaskCardModel> _tasks = sampleTasks;
+  List<ProfileRow>? _profiles;
+  bool _offline = false;
+
+  static const _fallbackFriends = [
+    ('LM', 'Lucas Mendes', 12, 153),
+    ('KC', 'Kaio Correa', 9, 120),
+    ('GC', 'Guilherme Califoni', 7, 98),
+  ];
 
   static const _last7Days = [1, 2, 1, 1, 2, 1, 1];
   static const _dayLabels = ['ter', 'qua', 'qui', 'sex', 'sab', 'dom', 'seg'];
 
-  static const _friendsRanking = [
-    ('DR', 'Diego Rocha', 12, 153),
-    ('CM', 'Carla Mendes', 2, 74),
-    ('LV', 'Lucas Vieira', 1, 70),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
 
-  List<(String, String, int, int)> get _ranking => [
-        (AppUser.initials, '${AppUser.name} (você)', 14, 189),
-        ..._friendsRanking,
-      ];
+  Future<void> _load() async {
+    try {
+      final results = await Future.wait([
+        SupabaseService.fetchTasks(),
+        SupabaseService.fetchProfiles(),
+      ]);
+      if (!mounted) return;
+      final tasks = results[0] as List<TaskCardModel>;
+      final profiles = results[1] as List<ProfileRow>;
+      setState(() {
+        if (tasks.isNotEmpty) _tasks = tasks;
+        _profiles = profiles;
+        _offline = false;
+      });
+    } catch (_) {
+      // Sem internet, Supabase fora do ar, etc. — fica com os dados
+      // locais já carregados, sem travar a tela.
+      if (!mounted) return;
+      setState(() => _offline = true);
+    }
+  }
+
+  List<TaskCardModel> get _highlightTasks => _tasks
+      .where((t) => t.title != 'Preparar apresentação do TCC')
+      .take(2)
+      .toList();
+
+  List<(String, String, int, int)> get _ranking {
+    final profiles = _profiles;
+    if (profiles != null && profiles.isNotEmpty) {
+      return profiles.asMap().entries.map((entry) {
+        final p = entry.value;
+        final name = entry.key == 0 ? '${AppUser.name} (você)' : p.name;
+        final initials = entry.key == 0 ? AppUser.initials : p.initials;
+        return (initials, name, p.currentStreak, p.points);
+      }).toList();
+    }
+    return [
+      (AppUser.initials, '${AppUser.name} (você)', 14, 189),
+      ..._fallbackFriends,
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,19 +94,31 @@ class _ConstanciaScreenState extends State<ConstanciaScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const BrandMark(logoSize: 48),
+            const Text('Constancia',
+                style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary)),
             IconButton(
-              icon: const Icon(Icons.settings_outlined, color: AppColors.textPrimary),
+              icon: const Icon(Icons.settings_outlined,
+                  color: AppColors.textPrimary),
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ConfiguracoesScreen()),
+                  MaterialPageRoute(
+                      builder: (_) => const ConfiguracoesScreen()),
                 );
               },
             ),
           ],
         ),
         Text('Olá, ${AppUser.firstName}, pronto para mais um dia?',
-            style: const TextStyle(fontSize: 13.5, color: AppColors.textSecondary)),
+            style: const TextStyle(
+                fontSize: 13.5, color: AppColors.textSecondary)),
+        if (_offline) ...[
+          const SizedBox(height: 6),
+          const Text('Sem conexão com o banco — mostrando dados locais.',
+              style: TextStyle(fontSize: 11.5, color: AppColors.statusParada)),
+        ],
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(18),
@@ -68,7 +131,8 @@ class _ConstanciaScreenState extends State<ConstanciaScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Sequência de ${AppUser.firstName}',
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                  style: const TextStyle(
+                      color: AppColors.textSecondary, fontSize: 13)),
               const SizedBox(height: 6),
               RichText(
                 text: const TextSpan(children: [
@@ -105,7 +169,7 @@ class _ConstanciaScreenState extends State<ConstanciaScreen> {
                 color: AppColors.textPrimary)),
         const SizedBox(height: 10),
         ..._highlightTasks.map((task) {
-          final done = TaskCompletion.isDone(task.title);
+          final done = _doneToday.contains(task.title);
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Material(
@@ -115,11 +179,13 @@ class _ConstanciaScreenState extends State<ConstanciaScreen> {
                 borderRadius: BorderRadius.circular(12),
                 onTap: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => CardDetailScreen(task: task)),
+                    MaterialPageRoute(
+                        builder: (_) => CardDetailScreen(task: task)),
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.divider),
@@ -129,7 +195,11 @@ class _ConstanciaScreenState extends State<ConstanciaScreen> {
                       GestureDetector(
                         onTap: () {
                           setState(() {
-                            TaskCompletion.toggle(task.title);
+                            if (done) {
+                              _doneToday.remove(task.title);
+                            } else {
+                              _doneToday.add(task.title);
+                            }
                           });
                         },
                         child: Container(
@@ -138,12 +208,16 @@ class _ConstanciaScreenState extends State<ConstanciaScreen> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(5),
                             border: Border.all(
-                                color: done ? AppColors.primary : AppColors.textSecondary,
+                                color: done
+                                    ? AppColors.primary
+                                    : AppColors.textSecondary,
                                 width: 1.5),
-                            color: done ? AppColors.primary : Colors.transparent,
+                            color:
+                                done ? AppColors.primary : Colors.transparent,
                           ),
                           child: done
-                              ? const Icon(Icons.check, size: 12, color: Colors.white)
+                              ? const Icon(Icons.check,
+                                  size: 12, color: Colors.white)
                               : null,
                         ),
                       ),
@@ -153,12 +227,16 @@ class _ConstanciaScreenState extends State<ConstanciaScreen> {
                           task.title,
                           style: TextStyle(
                             fontSize: 13.5,
-                            color: done ? AppColors.textSecondary : AppColors.textPrimary,
-                            decoration: done ? TextDecoration.lineThrough : null,
+                            color: done
+                                ? AppColors.textSecondary
+                                : AppColors.textPrimary,
+                            decoration:
+                                done ? TextDecoration.lineThrough : null,
                           ),
                         ),
                       ),
-                      const Icon(Icons.chevron_right, size: 18, color: AppColors.textSecondary),
+                      const Icon(Icons.chevron_right,
+                          size: 18, color: AppColors.textSecondary),
                     ],
                   ),
                 ),

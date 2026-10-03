@@ -8,6 +8,7 @@ class TaskComment {
 }
 
 class TaskCardModel {
+  final String id;
   final String title;
   final String assigneeInitials;
   final TaskStatus status;
@@ -15,6 +16,7 @@ class TaskCardModel {
   final List<TaskComment> comments;
 
   const TaskCardModel({
+    required this.id,
     required this.title,
     required this.assigneeInitials,
     required this.status,
