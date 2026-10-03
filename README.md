@@ -25,37 +25,35 @@ cd constancia_app
 flutter pub get
 ```
 
-### No navegador (caminho mais rápido)
+O projeto tem duas plataformas configuradas: **web** e **android**.
+
+### No navegador — caminho recomendado
 
 ```bash
 flutter run -d chrome
 ```
 
-Não exige Android Studio nem emulador. É o caminho recomendado para uma
-demonstração rápida.
+Não exige Android Studio nem emulador, e funciona em qualquer sistema
+operacional. É o caminho mais seguro para a demonstração em aula.
 
 ### No emulador Android
 
-1. Abra o Android Studio e vá em **Tools → Device Manager**.
+1. No Android Studio, abra **Tools → Device Manager**.
 2. Crie um dispositivo virtual (qualquer Pixel com API 33 ou superior serve).
 3. Inicie o emulador e confirme que o Flutter o enxerga:
 
 ```bash
 flutter devices
-flutter run            # usa o dispositivo conectado
+flutter run
 ```
 
-### No desktop
+### Sem internet
 
-```bash
-flutter run -d windows   # ou -d linux, -d macos
-```
-
-As credenciais do Supabase já vêm no projeto (`lib/data/supabase_config.dart`),
-então não há nenhuma configuração extra. **O app roda mesmo sem internet**: toda
-tela que busca dados do banco começa exibindo os dados locais de
-`lib/data/sample_tasks.dart` e só troca pelos reais quando a busca termina. Se a
-busca falhar, a tela continua funcional e mostra um aviso discreto.
+O app roda normalmente offline. Toda tela que busca dados do banco começa
+exibindo os dados locais de `lib/data/sample_tasks.dart` e só troca pelos reais
+quando a busca termina. Se a busca falhar, a tela continua funcional e mostra um
+aviso discreto. As credenciais do Supabase já vêm no projeto
+(`lib/data/supabase_config.dart`), então não há configuração extra.
 
 ### Antes de subir qualquer mudança
 
@@ -64,6 +62,9 @@ flutter analyze
 flutter test
 ```
 
+Se você já rodou o projeto antes de alguma mudança nas plataformas, limpe o
+cache de build primeiro com `flutter clean`.
+
 ---
 
 ## Decisões técnicas desde o CP4
@@ -71,9 +72,10 @@ flutter test
 ### Banco de dados: Supabase
 
 Escolhido em vez do Firebase porque os dados do app são relacionais por natureza —
-tarefas pertencem a um usuário, comentários pertencem a uma tarefa, o ranking cruza
-pontos entre usuários. Isso mapeia diretamente para tabelas SQL. O setup no Flutter
-também é mais simples: só URL e chave, sem configuração nativa por plataforma.
+tarefas pertencem a um usuário, comentários pertencem a uma tarefa, o ranking
+cruza pontos entre usuários. Isso mapeia diretamente para tabelas SQL. O setup no
+Flutter também é mais simples: só URL e chave, sem configuração nativa por
+plataforma.
 
 O schema (`supabase/schema.sql`) tem três tabelas: `profiles` (pessoas, streak,
 pontos), `tasks` (tarefas, ligadas a um dono) e `task_comments` (comentários de
@@ -84,39 +86,56 @@ amigos numa tarefa).
 `ConstanciaScreen`, `BoardScreen` e `CardDetailScreen` começam com os dados de
 `sample_tasks.dart` e trocam pelos do Supabase assim que a busca termina. Isso
 garante que a tela nunca fique em branco e que uma apresentação não trave por
-causa da rede — requisito direto do CP5, que pede protótipo funcional com dados
+causa da rede — atende de uma vez os dois requisitos do CP5, protótipo com dados
 mockados **e** integração de banco.
 
 ### Unificação dos repositórios
 
-O trabalho do CP5 foi feito num repositório separado, sem ancestral comum com este.
-A união exigiu `git merge --allow-unrelated-histories`, e os 20 arquivos que existiam
-dos dois lados entraram como conflito. O registro completo de como cada um foi
-resolvido está em **[MERGE.md](MERGE.md)**.
+O trabalho do CP5 foi feito num repositório separado, sem ancestral comum com
+este. A união exigiu `git merge --allow-unrelated-histories`, e os 20 arquivos
+que existiam dos dois lados entraram como conflito. O registro de como cada um
+foi resolvido está em **[MERGE.md](MERGE.md)**.
 
-### Identidade visual restaurada
+### Identidade visual
 
 O repositório do CP5 havia adotado uma paleta verde escuro com tipografia Inter.
-O grupo decidiu manter a identidade documentada aqui — laranja queimado e Manrope —
-e ela foi restaurada após o merge.
+O grupo decidiu manter a identidade documentada aqui — laranja queimado e Manrope
+—, restaurada após o merge.
 
-### Desempenho
+A marca deixou de ser um PNG e passou a ser **desenhada em código**. O antigo
+`assets/logo.png` tem 2000 × 2000 px, e o Flutter decodifica imagens na resolução
+do arquivo, não na do widget: o selo ocupava cerca de 15 MB de memória para ser
+exibido a poucos pixels, em três telas. No lugar entrou o `AnimatedWordmark`, um
+letreiro que escreve `constancia.` letra a letra, com o ponto final chegando por
+último em laranja. Além de mais leve, escala para qualquer tamanho sem perder
+nitidez.
 
-- `assets/logo.png` tem 2000 × 2000 px. O Flutter decodifica imagens na resolução
-  do arquivo, não na do widget, então o selo da marca ocupava cerca de **15 MB de
-  memória** para ser desenhado a 30–48 px, em três telas. `BrandMark` agora passa
-  `cacheWidth`/`cacheHeight` calculados pelo tamanho pedido vezes o
-  `devicePixelRatio`, derrubando o custo para menos de 0,1 MB sem perder nitidez.
+### Correções de desempenho e comportamento
+
 - `CardDetailScreen` criava um `TextEditingController` sem `dispose()`, vazando um
-  controller a cada abertura de tarefa. Corrigido.
+  controller a cada abertura de tarefa.
+- Concluir um ciclo de foco tinha deixado de marcar a tarefa como feita na tela
+  principal: a versão do CP5 trocou o estado compartilhado por um controle local
+  e as duas telas pararam de conversar. `TaskCompletion` voltou a ligar as duas.
+
+### Plataformas
+
+Apenas **android** e **web** ficam versionadas. `ios` e `macos` exigem um Mac
+para compilar, que ninguém do grupo tem; `windows` só é necessário para o build
+nativo de desktop, e no Windows o app roda igual pelo Chrome. Qualquer plataforma
+volta com um comando, sem tocar no `lib/`:
+
+```bash
+flutter create --platforms=windows .
+```
 
 ### Estado de tarefa concluída
 
-`TaskCompletion` guarda, em memória, quais tarefas foram concluídas no dia. É
-compartilhado entre a tela principal e a de ciclo de foco: terminar um ciclo marca
-a tarefa como feita na lista. A marcação é **apenas visual** neste MVP — o status
-no Supabase não muda, porque o enum do schema (`nao_iniciada`,
-`em_desenvolvimento`, `parada`) não tem um valor para "concluída".
+`TaskCompletion` guarda, em memória, quais tarefas foram concluídas no dia, e é
+compartilhado entre a tela principal e a de ciclo de foco. A marcação é **apenas
+visual** neste MVP — o status no Supabase não muda, porque o enum do schema
+(`nao_iniciada`, `em_desenvolvimento`, `parada`) não tem um valor para
+"concluída".
 
 ---
 
@@ -140,27 +159,29 @@ Cadastro → Onboarding (escolha do ciclo) → Constancia (tela principal)
 - **Travados** — cards bloqueados com o motivo.
 - **Configurações** — pelo ícone de engrenagem na tela principal.
 
-## Estrutura de pastas
+## Estrutura do repositório
 
 ```
 lib/
-  main.dart              inicializa o Supabase e sobe o app
-  data/                  Supabase, fallback local, AppUser, TaskCompletion
-  models/                TaskCardModel, FocusCycle
-  screens/               uma tela por arquivo
-  theme/                 cores e tipografia centralizadas
-  widgets/               BrandMark, TaskCard, CycleOptionCard
+  main.dart            inicializa o Supabase e sobe o app
+  data/                Supabase, fallback local, AppUser, TaskCompletion
+  models/              TaskCardModel, FocusCycle
+  screens/             uma tela por arquivo
+  theme/               cores e tipografia centralizadas
+  widgets/             AnimatedWordmark, TaskCard, CycleOptionCard
 supabase/
-  schema.sql             schema + dados mockados
-assets/                  logo, ícones e splash
-test/                    teste de widget da tela de cadastro
+  schema.sql           schema + dados mockados
+android/               plataforma Android (emulador)
+web/                   plataforma web (Chrome)
+assets/                ícones e splash do app
+test/                  testes de widget
 ```
 
 ## Identidade visual
 
 - **Marca:** sempre grafada `constancia.` — minúscula, com ponto. Nunca
-  "Constancia" ou "ConstânciaPomodoro". O selo em `assets/logo.png` é a fonte
-  única da wordmark e é renderizado pelo widget `BrandMark`.
+  "Constancia" ou "ConstânciaPomodoro". É renderizada pelo widget
+  `AnimatedWordmark`, que anima as letras e destaca o ponto final em laranja.
 - **Tipografia:** [Manrope](https://fonts.google.com/specimen/Manrope) via `google_fonts`.
 - **Paleta** (`lib/theme/app_colors.dart`):
 
@@ -185,12 +206,17 @@ test/                    teste de widget da tela de cadastro
 - **supabase_flutter** — persistência
 - **google_fonts** — tipografia da marca
 
-## Próximos passos
+## Limitações conhecidas e próximos passos
 
-- Autenticação real (o cadastro ainda não fala com backend)
-- Restringir as políticas de RLS quando houver login — ver pendência 4 do `MERGE.md`
-- Representar "tarefa concluída" no schema, para a marcação sair da memória
-- Ciclo "personalizado" com input de minutos
+- **Não há autenticação.** O cadastro preenche um nome em memória (`AppUser`) e
+  segue para o onboarding; nenhuma conta é criada. Por isso não existe tela de
+  login, e os links "Entrar", "termos de uso" e "política de privacidade" ainda
+  não são clicáveis. Implementar Supabase Auth resolve os três de uma vez.
+- **Políticas de RLS abertas.** As três tabelas estão com leitura e escrita
+  livres, porque ainda não há usuário autenticado para amarrar as regras. Ver a
+  pendência 4 do [MERGE.md](MERGE.md).
+- Representar "tarefa concluída" no schema, para a marcação sair da memória.
+- Ciclo "personalizado" com input de minutos.
 
 ## Vídeo demonstrativo
 
