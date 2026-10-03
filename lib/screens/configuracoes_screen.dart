@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../data/app_cycle.dart';
 import '../models/focus_cycle.dart';
+import '../data/app_cycle.dart';
 import '../theme/app_colors.dart';
 import '../widgets/cycle_option_card.dart';
 
@@ -13,7 +13,8 @@ class ConfiguracoesScreen extends StatefulWidget {
 
 class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
   late int _selectedIndex = () {
-    final idx = FocusCycle.presets.indexWhere((c) => c.label == AppCycle.selected.label);
+    final idx = FocusCycle.presets
+        .indexWhere((c) => c.label == AppCycle.selected.label);
     return idx == -1 ? 2 : idx;
   }();
 
@@ -44,7 +45,8 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
                   color: AppColors.textPrimary)),
           const SizedBox(height: 4),
           Text('Atual: ${current.description}',
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+              style: const TextStyle(
+                  fontSize: 13, color: AppColors.textSecondary)),
           const SizedBox(height: 16),
           ...List.generate(FocusCycle.presets.length, (index) {
             final cycle = FocusCycle.presets[index];

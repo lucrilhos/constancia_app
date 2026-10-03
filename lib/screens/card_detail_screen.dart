@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../data/supabase_service.dart';
 import '../data/app_cycle.dart';
+import '../data/app_user.dart';
 import '../models/task_card_model.dart';
 import '../theme/app_colors.dart';
 import 'focus_cycle_screen.dart';
@@ -15,7 +17,34 @@ class CardDetailScreen extends StatefulWidget {
 
 class _CardDetailScreenState extends State<CardDetailScreen> {
   final _commentController = TextEditingController();
-  late final List<TaskComment> _comments = List.of(widget.task.comments);
+  late List<TaskComment> _comments = List.of(widget.task.comments);
+  String? _currentProfileId;
+  bool _isRealTask =
+      false; // false para tarefas de fallback local (id 'local-*')
+
+  @override
+  void initState() {
+    super.initState();
+    _isRealTask = !widget.task.id.startsWith('local-');
+    if (_isRealTask) _loadFromSupabase();
+  }
+
+  Future<void> _loadFromSupabase() async {
+    try {
+      final results = await Future.wait([
+        SupabaseService.fetchComments(widget.task.id),
+        SupabaseService.fetchCurrentProfileId(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _comments = results[0] as List<TaskComment>;
+        _currentProfileId = results[1] as String?;
+      });
+    } catch (_) {
+      // Sem conexão: fica com os comentários que já vieram embutidos
+      // na tarefa (fallback local).
+    }
+  }
 
   Color get _statusColor {
     switch (widget.task.status) {
@@ -39,13 +68,28 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
     }
   }
 
-  void _addComment() {
+  Future<void> _addComment() async {
     final text = _commentController.text.trim();
     if (text.isEmpty) return;
     setState(() {
       _comments.add(TaskComment('Você', text));
       _commentController.clear();
     });
+
+    // Tenta salvar no Supabase de verdade; se não der (offline, tarefa
+    // de fallback, etc.), o comentário já apareceu na tela mesmo assim.
+    final profileId = _currentProfileId;
+    if (_isRealTask && profileId != null) {
+      try {
+        await SupabaseService.addComment(
+          taskId: widget.task.id,
+          authorId: profileId,
+          text: text,
+        );
+      } catch (_) {
+        // Fica só local mesmo, sem travar a UI.
+      }
+    }
   }
 
   @override
@@ -70,7 +114,8 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: _statusColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
@@ -89,7 +134,7 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                 radius: 13,
                 backgroundColor: AppColors.primary.withValues(alpha: 0.15),
                 child: Text(
-                  widget.task.assigneeInitials,
+                  AppUser.initials,
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -99,7 +144,8 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
               ),
             ],
           ),
-          if (widget.task.status == TaskStatus.parada && widget.task.blockedReason != null) ...[
+          if (widget.task.status == TaskStatus.parada &&
+              widget.task.blockedReason != null) ...[
             const SizedBox(height: 20),
             Container(
               width: double.infinity,
@@ -107,7 +153,8 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
               decoration: BoxDecoration(
                 color: AppColors.statusParada.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.statusParada.withValues(alpha: 0.3)),
+                border: Border.all(
+                    color: AppColors.statusParada.withValues(alpha: 0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,7 +166,8 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                           color: AppColors.statusParada)),
                   const SizedBox(height: 4),
                   Text(widget.task.blockedReason!,
-                      style: const TextStyle(fontSize: 13, color: AppColors.textPrimary)),
+                      style: const TextStyle(
+                          fontSize: 13, color: AppColors.textPrimary)),
                 ],
               ),
             ),
@@ -134,6 +182,7 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                     builder: (_) => FocusCycleScreen(
                       taskTitle: widget.task.title,
                       focusMinutes: AppCycle.focusMinutes,
+                      restMinutes: AppCycle.restMinutes,
                     ),
                   ),
                 );
@@ -152,7 +201,8 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
             const Padding(
               padding: EdgeInsets.only(bottom: 12),
               child: Text('Nenhum comentário ainda.',
-                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                  style:
+                      TextStyle(fontSize: 13, color: AppColors.textSecondary)),
             ),
           ..._comments.map((c) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -161,9 +211,12 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                   children: [
                     CircleAvatar(
                       radius: 12,
-                      backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                      backgroundColor:
+                          AppColors.primary.withValues(alpha: 0.12),
                       child: Text(
-                        c.author.substring(0, c.author.length >= 2 ? 2 : 1).toUpperCase(),
+                        c.author
+                            .substring(0, c.author.length >= 2 ? 2 : 1)
+                            .toUpperCase(),
                         style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
@@ -182,7 +235,8 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                                   color: AppColors.textPrimary)),
                           Text(c.text,
                               style: const TextStyle(
-                                  fontSize: 13, color: AppColors.textSecondary)),
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary)),
                         ],
                       ),
                     ),
@@ -199,8 +253,8 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                     hintText: 'Escrever um comentário...',
                     filled: true,
                     fillColor: Colors.white,
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: const BorderSide(color: AppColors.divider),
@@ -213,7 +267,8 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
               IconButton.filled(
                 onPressed: _addComment,
                 style: IconButton.styleFrom(backgroundColor: AppColors.primary),
-                icon: const Icon(Icons.arrow_forward, color: Colors.white, size: 18),
+                icon: const Icon(Icons.arrow_forward,
+                    color: Colors.white, size: 18),
               ),
             ],
           ),
