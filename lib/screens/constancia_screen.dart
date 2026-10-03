@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../data/app_user.dart';
 import '../data/sample_tasks.dart';
 import '../data/supabase_service.dart';
+import '../data/task_completion.dart';
 import '../models/task_card_model.dart';
 import '../theme/app_colors.dart';
 import '../widgets/brand_mark.dart';
@@ -16,10 +17,9 @@ class ConstanciaScreen extends StatefulWidget {
 }
 
 class _ConstanciaScreenState extends State<ConstanciaScreen> {
-  // Tarefas em destaque na tela principal (as "principais" do dia).
-  // Marcar como feita aqui é só visual neste MVP — não altera o status
-  // da tarefa no banco.
-  final Set<String> _doneToday = {};
+  // O estado de "concluída hoje" vive em TaskCompletion, compartilhado com a
+  // tela de ciclo de foco — terminar um ciclo marca a tarefa aqui também.
+  // Neste MVP a marcação é só visual: não altera o status da tarefa no banco.
 
   // Começa com os dados locais (pra tela nunca ficar em branco) e troca
   // pelos dados reais assim que o Supabase responder.
@@ -166,7 +166,7 @@ class _ConstanciaScreenState extends State<ConstanciaScreen> {
                 color: AppColors.textPrimary)),
         const SizedBox(height: 10),
         ..._highlightTasks.map((task) {
-          final done = _doneToday.contains(task.title);
+          final done = TaskCompletion.isDone(task.title);
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Material(
@@ -174,11 +174,15 @@ class _ConstanciaScreenState extends State<ConstanciaScreen> {
               borderRadius: BorderRadius.circular(12),
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
-                onTap: () {
-                  Navigator.of(context).push(
+                onTap: () async {
+                  // Espera a volta da navegação para redesenhar: se o usuário
+                  // concluiu um ciclo de foco lá dentro, a tarefa já aparece
+                  // marcada aqui.
+                  await Navigator.of(context).push(
                     MaterialPageRoute(
                         builder: (_) => CardDetailScreen(task: task)),
                   );
+                  if (mounted) setState(() {});
                 },
                 child: Container(
                   padding:
@@ -191,13 +195,7 @@ class _ConstanciaScreenState extends State<ConstanciaScreen> {
                     children: [
                       GestureDetector(
                         onTap: () {
-                          setState(() {
-                            if (done) {
-                              _doneToday.remove(task.title);
-                            } else {
-                              _doneToday.add(task.title);
-                            }
-                          });
+                          setState(() => TaskCompletion.toggle(task.title));
                         },
                         child: Container(
                           width: 18,

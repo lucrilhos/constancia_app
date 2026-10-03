@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../data/task_completion.dart';
 import '../theme/app_colors.dart';
 
 enum _Phase { focus, rest }
@@ -49,6 +50,9 @@ class _FocusCycleScreenState extends State<FocusCycleScreen> {
       setState(() {
         if (_phase == _Phase.focus) {
           _dayValidated = true;
+          // Concluir um ciclo de foco marca a tarefa como feita no dia,
+          // refletindo na lista da tela principal.
+          TaskCompletion.markDone(widget.taskTitle);
           if (_restTotal > 0) {
             _phase = _Phase.rest;
             _remaining = _restTotal;
